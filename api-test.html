@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle API Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ddd; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Vehicle API Test</h1>
+    
+    <div class="section">
+        <h2>1. Login</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <p>Email: john@mail.com | Password: password123</p>
+        <pre id="loginResult"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>2. Get Vehicles</h2>
+        <button onclick="testGetVehicles()">Get Vehicles</button>
+        <pre id="vehiclesResult"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>3. Get Vehicle Positions</h2>
+        <button onclick="testGetPositions()">Get Positions</button>
+        <pre id="positionsResult"></pre>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let token = null;
+
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'john@mail.com',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                token = data.access_token;
+                
+                document.getElementById('loginResult').textContent = 
+                    `Status: ${response.status}\n` +
+                    `Token: ${token ? token.substring(0, 20) + '...' : 'FAILED'}\n` +
+                    `Full Response:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                document.getElementById('loginResult').textContent = `Error: ${error}`;
+            }
+        }
+
+        async function testGetVehicles() {
+            if (!token) {
+                document.getElementById('vehiclesResult').textContent = 'Please login first!';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/vehicles`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('vehiclesResult').textContent = 
+                    `Status: ${response.status}\n` +
+                    `Is Array: ${Array.isArray(data)}\n` +
+                    `Vehicle Count: ${Array.isArray(data) ? data.length : (data.vehicles ? data.vehicles.length : 'Unknown')}\n` +
+                    `Full Response:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                document.getElementById('vehiclesResult').textContent = `Error: ${error}`;
+            }
+        }
+
+        async function testGetPositions() {
+            try {
+                const response = await fetch(`${API_BASE}/api/vehicle-positions/latest/all`);
+                const data = await response.json();
+                
+                document.getElementById('positionsResult').textContent = 
+                    `Status: ${response.status}\n` +
+                    `Response Keys: ${Object.keys(data).join(', ')}\n` +
+                    `Position Count: ${Array.isArray(data) ? data.length : (data.positions ? data.positions.length : 'Unknown')}\n` +
+                    `Full Response:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                document.getElementById('positionsResult').textContent = `Error: ${error}`;
+            }
+        }
+    </script>
+</body>
+</html>
